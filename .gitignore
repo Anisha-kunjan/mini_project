@@ -1,0 +1,10 @@
+# Compiled Binaries
+*.exe
+*.o
+*.out
+
+# IDE or Editor settings
+.vscode/
+.idea/
+*.swp
+*.patch
