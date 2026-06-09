@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C Programming — Classroom Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Fraunces:ital,wght@0,400;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --dark:   #1A3C4A;
+    --mid:    #0D6270;
+    --teal:   #0D9488;
+    --amber:  #E07B39;
+    --gold:   #F5A623;
+    --cream:  #F9F5EF;
+    --white:  #FFFFFF;
+    --text:   #1C2B35;
+    --muted:  #5E7A85;
+    --correct:#22c55e;
+    --wrong:  #ef4444;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Fraunces', Georgia, serif;
+    background: var(--dark);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── ANIMATED BACKGROUND ── */
+  .bg-dots {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: radial-gradient(circle, rgba(13,148,136,0.15) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: bgShift 20s linear infinite;
+  }
+  @keyframes bgShift { 0%{background-position:0 0} 100%{background-position:40px 40px} }
+
+  /* ── MAIN LAYOUT ── */
+  .app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── HOME SCREEN ── */
+  .home {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem; gap: 2rem; text-align: center;
+  }
+
+  .home-badge {
+    background: var(--amber); color: var(--white);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 3px;
+    padding: 0.4rem 1.2rem; border-radius: 2rem;
+    text-transform: uppercase;
+  }
+
+  .home h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 900; line-height: 1.1;
+    color: var(--white);
+  }
+  .home h1 span { color: var(--gold); font-style: italic; }
+
+  .home p {
+    font-size: 1.15rem; color: rgba(255,255,255,0.7);
+    max-width: 480px; font-style: italic;
+    font-family: 'Fraunces', serif;
+  }
+
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.2rem; width: 100%; max-width: 900px; margin-top: 1rem;
+  }
+
+  .game-card {
+    background: rgba(13,98,112,0.5);
+    border: 1.5px solid rgba(13,148,136,0.4);
+    border-radius: 16px; padding: 1.6rem;
+    cursor: pointer; transition: all 0.25s ease;
+    text-align: left; position: relative; overflow: hidden;
+  }
+  .game-card::before {
+    content: ''; position: absolute; top:0; left:0; right:0; height: 3px;
+    background: var(--card-color, var(--teal));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+  .game-card:hover { transform: translateY(-4px); border-color: var(--card-color, var(--teal)); background: rgba(13,98,112,0.8); }
+  .game-card:hover::before { transform: scaleX(1); }
+
+  .card-emoji { font-size: 2.2rem; margin-bottom: 0.8rem; display: block; }
+  .card-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--white); }
+  .card-desc { font-size: 0.85rem; color: rgba(255,255,255,0.6); font-family: 'Space Mono', monospace; line-height: 1.5; }
+  .card-time {
+    display: inline-block; margin-top: 0.8rem;
+    background: rgba(0,0,0,0.3); border-radius: 2rem;
+    padding: 0.2rem 0.8rem; font-size: 0.7rem;
+    font-family: 'Space Mono', monospace; color: var(--card-color, var(--teal));
+  }
+
+  /* ── GAME SCREEN ── */
+  .game-screen {
+    display: none; flex: 1; flex-direction: column;
+    padding: 1.5rem; max-width: 860px; margin: 0 auto; width: 100%;
+  }
+  .game-screen.active { display: flex; }
+
+  .game-header {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1.5rem; flex-wrap: wrap;
+  }
+  .back-btn {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: var(--white); padding: 0.5rem 1rem; border-radius: 8px;
+    cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.8rem;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.2); }
+
+  .game-title-bar { flex: 1; }
+  .game-title-bar h2 { font-size: 1.4rem; font-weight: 700; }
+  .game-title-bar p { font-size: 0.8rem; color: rgba(255,255,255,0.5); font-family: 'Space Mono', monospace; }
+
+  .score-badge {
+    background: var(--amber); color: var(--white);
+    padding: 0.4rem 1rem; border-radius: 2rem;
+    font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: 700;
+  }
+
+  /* ── QUESTION CARD ── */
+  .q-progress {
+    font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    color: var(--gold); margin-bottom: 0.8rem; letter-spacing: 2px;
+  }
+
+  .q-card {
+    background: rgba(13,98,112,0.4);
+    border: 1.5px solid rgba(13,148,136,0.3);
+    border-radius: 20px; padding: 2rem;
+    margin-bottom: 1.5rem; position: relative;
+    animation: slideIn 0.4s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+
+  .q-category {
+    font-family: 'Space Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 2px; color: var(--amber);
+    text-transform: uppercase; margin-bottom: 0.8rem;
+  }
+
+  .q-text {
+    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    font-weight: 700; line-height: 1.4; color: var(--white);
+    margin-bottom: 0.5rem;
+  }
+
+  .q-sub {
+    font-size: 0.9rem; color: rgba(255,255,255,0.6);
+    font-style: italic; margin-top: 0.4rem;
+  }
+
+  /* ── ANSWER BUTTONS ── */
+  .answers { display: grid; gap: 0.8rem; }
+  .answers.two-col { grid-template-columns: 1fr 1fr; }
+
+  .ans-btn {
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(255,255,255,0.15);
+    color: var(--white); padding: 1rem 1.4rem;
+    border-radius: 12px; cursor: pointer;
+    font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600;
+    transition: all 0.2s ease; text-align: left;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .ans-btn:hover:not(:disabled) {
+    background: rgba(13,148,136,0.25);
+    border-color: var(--teal); transform: translateX(4px);
+  }
+  .ans-btn.correct { background: rgba(34,197,94,0.2); border-color: var(--correct); color: var(--correct); }
+  .ans-btn.wrong   { background: rgba(239,68,68,0.15); border-color: var(--wrong); color: var(--wrong); }
+  .ans-btn.reveal  { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.4); }
+  .ans-btn:disabled { cursor: default; }
+
+  .ans-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+  /* ── FEEDBACK ── */
+  .feedback {
+    background: rgba(0,0,0,0.3); border-radius: 12px;
+    padding: 1.2rem 1.5rem; margin-top: 1rem;
+    border-left: 4px solid var(--gold);
+    animation: fadeIn 0.3s ease;
+    font-size: 0.95rem; line-height: 1.6;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .feedback strong { color: var(--gold); display: block; margin-bottom: 0.3rem; font-size: 1rem; }
+
+  /* ── NEXT BTN ── */
+  .next-btn {
+    background: var(--amber); color: var(--white);
+    border: none; padding: 1rem 2.5rem; border-radius: 12px;
+    font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; margin-top: 1rem;
+    display: none; align-self: flex-end;
+  }
+  .next-btn.show { display: block; }
+  .next-btn:hover { background: #c96a28; transform: scale(1.03); }
+
+  /* ── RESULTS SCREEN ── */
+  .results {
+    text-align: center; padding: 3rem 2rem;
+    animation: slideIn 0.5s ease;
+  }
+  .results-emoji { font-size: 5rem; margin-bottom: 1rem; display: block; }
+  .results h2 { font-size: 2.5rem; font-weight: 900; margin-bottom: 0.5rem; }
+  .results-score { font-size: 4rem; font-weight: 900; color: var(--gold); font-style: italic; }
+  .results-total { font-size: 1rem; color: rgba(255,255,255,0.6); font-family: 'Space Mono', monospace; margin-bottom: 2rem; }
+  .results-msg { font-size: 1.1rem; color: rgba(255,255,255,0.8); max-width: 400px; margin: 0 auto 2rem; font-style: italic; }
+
+  .results-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .results-btns button {
+    padding: 0.8rem 1.8rem; border-radius: 10px; border: none;
+    font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-retry { background: var(--teal); color: var(--white); }
+  .btn-home  { background: rgba(255,255,255,0.15); color: var(--white); border: 1px solid rgba(255,255,255,0.3) !important; }
+  .btn-retry:hover { background: var(--mid); }
+  .btn-home:hover  { background: rgba(255,255,255,0.25); }
+
+  /* ── BUZZ GAME (Compile/Error) ── */
+  .buzz-question {
+    font-size: clamp(1.3rem, 4vw, 2rem);
+    font-weight: 700; text-align: center; line-height: 1.4;
+    color: var(--white); padding: 1.5rem 0;
+  }
+  .buzz-buttons {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1.2rem; margin-top: 1rem;
+  }
+  .buzz-btn {
+    padding: 1.8rem; border-radius: 16px; border: 3px solid;
+    font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 900;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .buzz-compile { background: rgba(34,197,94,0.1); border-color: var(--correct); color: var(--correct); }
+  .buzz-error   { background: rgba(239,68,68,0.1); border-color: var(--wrong); color: var(--wrong); }
+  .buzz-btn:hover:not(:disabled) { transform: scale(1.04); }
+  .buzz-compile:hover:not(:disabled) { background: rgba(34,197,94,0.25); }
+  .buzz-error:hover:not(:disabled)   { background: rgba(239,68,68,0.2); }
+
+  /* ── HUMAN COMPILER GAME ── */
+  .reveal-btn {
+    background: var(--mid); color: var(--white);
+    border: 2px solid var(--teal); padding: 0.8rem 2rem;
+    border-radius: 10px; font-family: 'Fraunces', serif;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; margin-right: 0.8rem;
+  }
+  .reveal-btn:hover { background: var(--teal); }
+
+  /* ── LEADERBOARD ── */
+  .lb-form { display: flex; gap: 0.8rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .lb-input {
+    flex: 1; min-width: 180px;
+    background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.2);
+    color: var(--white); padding: 0.8rem 1rem; border-radius: 10px;
+    font-family: 'Fraunces', serif; font-size: 1rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .lb-input:focus { border-color: var(--teal); }
+  .lb-input::placeholder { color: rgba(255,255,255,0.35); }
+  .lb-add-btn {
+    background: var(--teal); color: var(--white); border: none;
+    padding: 0.8rem 1.4rem; border-radius: 10px;
+    font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  .lb-add-btn:hover { background: var(--mid); }
+
+  .lb-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .lb-item {
+    display: flex; align-items: center; gap: 1rem;
+    background: rgba(13,98,112,0.3); border-radius: 12px;
+    padding: 0.8rem 1.2rem; border: 1px solid rgba(13,148,136,0.2);
+    animation: slideIn 0.3s ease;
+  }
+  .lb-rank { font-size: 1.3rem; flex-shrink: 0; }
+  .lb-name { flex: 1; font-weight: 700; font-size: 1rem; }
+  .lb-pts  { font-family: 'Space Mono', monospace; color: var(--gold); font-size: 1rem; font-weight: 700; }
+  .lb-controls { display: flex; gap: 0.4rem; }
+  .lb-pt-btn {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: var(--white); width: 28px; height: 28px; border-radius: 6px;
+    cursor: pointer; font-size: 0.9rem; font-weight: 700; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lb-pt-btn.plus:hover  { background: rgba(34,197,94,0.3); border-color: var(--correct); }
+  .lb-pt-btn.minus:hover { background: rgba(239,68,68,0.2); border-color: var(--wrong); }
+  .lb-remove { background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 1rem; padding: 0 4px; }
+  .lb-remove:hover { color: var(--wrong); }
+
+  .lb-empty { text-align: center; color: rgba(255,255,255,0.4); font-style: italic; padding: 2rem; font-size: 0.95rem; }
+
+  /* ── POINT FLASH ── */
+  .pt-flash {
+    position: fixed; pointer-events: none; z-index: 100;
+    font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 900;
+    color: var(--gold); text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    animation: ptPop 0.8s ease forwards;
+  }
+  @keyframes ptPop {
+    0%   { opacity:1; transform: translateY(0) scale(1); }
+    100% { opacity:0; transform: translateY(-60px) scale(1.4); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:560px){
+    .answers.two-col { grid-template-columns: 1fr; }
+    .buzz-buttons { grid-template-columns: 1fr; }
+    .game-grid { grid-template-columns: 1fr; }
+    .q-card { padding: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-dots"></div>
+<div class="app" id="app">
+
+  <!-- ══════════════ HOME ══════════════ -->
+  <div class="home" id="homeScreen">
+    <div class="home-badge">🎮 C Programming · Classroom Games</div>
+    <h1>Learn C.<br><span>The Fun Way.</span></h1>
+    <p>Six interactive activities for your classroom. Pick one, play together, learn something real.</p>
+
+    <div class="game-grid">
+      <div class="game-card" style="--card-color:#0D9488" onclick="startGame('compileError')">
+        <span class="card-emoji">⚡</span>
+        <div class="card-title">Compile or Error?</div>
+        <div class="card-desc">Real-life situations — shout COMPILE or ERROR as a class</div>
+        <span class="card-time">⏱ 5 min · All levels</span>
+      </div>
+      <div class="game-card" style="--card-color:#E07B39" onclick="startGame('dataType')">
+        <span class="card-emoji">🧠</span>
+        <div class="card-title">What's My Data Type?</div>
+        <div class="card-desc">People, things & situations — guess the C data type</div>
+        <span class="card-time">⏱ 5–7 min · Topic 1–2</span>
+      </div>
+      <div class="game-card" style="--card-color:#F5A623" onclick="startGame('trueOrFalse')">
+        <span class="card-emoji">✋</span>
+        <div class="card-title">True or False?</div>
+        <div class="card-desc">Stand for TRUE, sit for FALSE — whole class plays together</div>
+        <span class="card-time">⏱ 5 min · Any time</span>
+      </div>
+      <div class="game-card" style="--card-color:#22c55e" onclick="startGame('whoAmI')">
+        <span class="card-emoji">🕵️</span>
+        <div class="card-title">Who Am I?</div>
+        <div class="card-desc">Clues revealed one by one — guess the C concept first!</div>
+        <span class="card-time">⏱ 7 min · Topic intro</span>
+      </div>
+      <div class="game-card" style="--card-color:#a855f7" onclick="startGame('functionGame')">
+        <span class="card-emoji">⚙️</span>
+        <div class="card-title">Function or Not?</div>
+        <div class="card-desc">Is this a good function? One job, clear output, reusable?</div>
+        <span class="card-time">⏱ 5 min · Topic 1</span>
+      </div>
+      <div class="game-card" style="--card-color:#ec4899" onclick="startGame('leaderboard')">
+        <span class="card-emoji">🏆</span>
+        <div class="card-title">C Points Board</div>
+        <div class="card-desc">Live leaderboard — award points throughout the class</div>
+        <span class="card-time">⏱ All semester · Running</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ GAME SCREENS ══════════════ -->
+  <div class="game-screen" id="gameScreen">
+    <div class="game-header">
+      <button class="back-btn" onclick="goHome()">← Back</button>
+      <div class="game-title-bar">
+        <h2 id="gameTitle">Game</h2>
+        <p id="gameSubtitle">subtitle</p>
+      </div>
+      <div class="score-badge" id="scoreBadge">Score: 0</div>
+    </div>
+    <div id="gameContent"></div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════
+
+const games = {
+
+  compileError: {
+    title: "⚡ Compile or Error?",
+    subtitle: "Everyone shouts together — COMPILE or ERROR!",
+    type: "buzz",
+    questions: [
+      { q: "You set an alarm for 6am. You wake up. You go to college on time.", answer: "compile", feedback: "✅ All steps in order. Input → Process → Output. Perfect program!" },
+      { q: "You set an alarm. You forget to press Save. You sleep until 9am.", answer: "error", feedback: "🐛 Forgot to save! In C — if you declare a variable but never initialize it, you get garbage values. Same energy." },
+      { q: "You send a WhatsApp message. You forget to press Send. You wonder why they didn't reply.", answer: "error", feedback: "🐛 Classic runtime error. The logic was right — the execution step was missing. printf() without actually calling it!" },
+      { q: "You cook Maggi. You forget to add water. You serve it anyway.", answer: "error", feedback: "🐛 Wrong input → garbage output. GIGO — Garbage In, Garbage Out. A fundamental truth in C." },
+      { q: "You declare a variable. You initialize it. You use it. You print the result.", answer: "compile", feedback: "✅ Textbook perfect. Declare → Initialize → Use → Output. This is the C way." },
+      { q: "You study for the wrong subject the night before the exam.", answer: "error", feedback: "🐛 Logic error! The program ran. No crash. But the output was completely wrong. The most dangerous bug — no error message, just wrong answer." },
+      { q: "You write a program. You test it. It works. You submit.", answer: "compile", feedback: "✅ Write → Test → Verify → Submit. This is TDD in action. You are already thinking right!" },
+      { q: "Your friend asks you for directions. You give directions to your own house by mistake.", answer: "error", feedback: "🐛 Wrong pointer! You pointed to the wrong address. This is literally what a pointer bug looks like in real life." },
+      { q: "You open the fridge. There is food. You eat. You are full.", answer: "compile", feedback: "✅ Condition checked → resource available → operation successful. if(food != NULL) eat(food); — Clean code!" },
+      { q: "You write an essay. You submit it. You realize it was for someone else's assignment.", answer: "error", feedback: "🐛 You wrote to the wrong file! fprintf(wrongFile, ...) — always check your file pointer before writing." },
+    ]
+  },
+
+  dataType: {
+    title: "🧠 What's My Data Type?",
+    subtitle: "Guess the C data type that best fits the situation",
+    type: "mcq",
+    questions: [
+      {
+        q: "Your CGPA",
+        sub: "It has a decimal point. It lives between 0 and 10.",
+        options: ["int", "float", "char", "struct"],
+        correct: 1,
+        feedback: "float! Because 8.75 is not 8. That decimal matters — especially to you. Use float or double for real numbers."
+      },
+      {
+        q: "Your name",
+        sub: "First name. Or full name. It's made of letters.",
+        options: ["int", "float", "char[]", "bool"],
+        correct: 2,
+        feedback: "char array — or char[] — a string in C is just an array of characters ending with \\0. There is no 'string' type in basic C. That's part of the beauty of it."
+      },
+      {
+        q: "Number of students in this classroom",
+        sub: "No decimals. It's a whole, countable number.",
+        options: ["float", "int", "double", "char"],
+        correct: 1,
+        feedback: "int! Whole numbers — people, marks, counts — always int. You can't have 2.5 students."
+      },
+      {
+        q: "Your full student profile — name, roll number, CGPA, branch",
+        sub: "Not just one value. A collection of different types of data.",
+        options: ["int[]", "char[]", "struct", "float"],
+        correct: 2,
+        feedback: "struct! When you bundle multiple variables of different types under one name — that's a structure. You are a struct. Welcome to Topic 2."
+      },
+      {
+        q: "Your ex — still in your contacts but the relationship is over",
+        sub: "Points to memory that no longer belongs to you.",
+        options: ["int", "NULL", "dangling pointer", "struct"],
+        correct: 2,
+        feedback: "Dangling pointer 😄 — A pointer that still holds an address, but the memory it points to has been freed or is no longer valid. Always set your pointers to NULL after freeing them. In code AND in life."
+      },
+      {
+        q: "Your teacher — name, subject, years of experience, salary she won't tell you, and a list of all her students",
+        sub: "Multiple fields of different types. Plus a collection inside.",
+        options: ["char[]", "float", "struct with nested array", "int"],
+        correct: 2,
+        feedback: "struct with a nested array! char name[], char subject[], int experience, float salary (confidential 😄), and Student students[] inside. A struct can contain other structs and arrays. Your teacher is the most complex data structure in this classroom — and she taught you last semester too. Welcome to Semester 2. 🙏"
+      },
+      {
+        q: "A single letter grade — A, B, C, D or F",
+        sub: "Just one character. One symbol.",
+        options: ["int", "float", "char", "string"],
+        correct: 2,
+        feedback: "char! A single character — stored in single quotes: char grade = 'A'; One byte. One symbol. Simple and clean."
+      },
+      {
+        q: "Whether today is a holiday — yes or no",
+        sub: "Only two possible values. True or false.",
+        options: ["int 0 or 1", "char", "float", "double"],
+        correct: 0,
+        feedback: "In C, there's no built-in bool (unless you include stdbool.h). We use int — 0 for false, 1 for true. if(isHoliday == 1) — beautiful simplicity."
+      },
+      {
+        q: "A list of 50 student names",
+        sub: "Multiple items. Same type. Stored together.",
+        options: ["struct", "char[][]", "int[]", "float"],
+        correct: 1,
+        feedback: "char[][] — a 2D char array. Think of it as an array of strings — each row is one name. This is how you store multiple strings in C without any fancy libraries."
+      },
+    ]
+  },
+
+  trueOrFalse: {
+    title: "✋ True or False?",
+    subtitle: "Stand up for TRUE — Sit down for FALSE. Everyone plays together!",
+    type: "trueFalse",
+    questions: [
+      { q: "Arrays in C start at index 1.", answer: false, feedback: "FALSE! Arrays in C start at index 0. So if you have 5 elements, the valid indices are 0, 1, 2, 3, 4. Accessing index 5 is going out of bounds — dangerous territory!", teach: "This is the most common beginner mistake. Burn it in — ZERO is the beginning." },
+      { q: "A char variable stores a single character like 'A' or '9'.", answer: true, feedback: "TRUE! char stores exactly one character. char grade = 'A'; — single quotes, single character. Simple and precise.", teach: "And remember — 'A' and \"A\" are very different in C. Single quote = char. Double quote = string." },
+      { q: "You can return multiple values directly from a C function.", answer: false, feedback: "FALSE! A C function can only return one value. To return multiple values, you use structures or pass arguments by reference. This is why structures are so powerful!", teach: "This limitation is by design — it forces clean, single-responsibility thinking in function design." },
+      { q: "int and float take the same amount of memory in C.", answer: false, feedback: "FALSE! Typically int = 4 bytes, float = 4 bytes — actually these are often the same size! But double = 8 bytes. The difference is not size but precision — float stores decimals, int cannot.", teach: "Always choose the right type for your data. int for counting. float for measuring." },
+      { q: "A function must be declared before it is called in C.", answer: true, feedback: "TRUE! In C, the compiler reads top to bottom. If you call a function before declaring it, the compiler doesn't know it exists yet. That's why we write function prototypes at the top.", teach: "Function prototypes are your promise to the compiler — 'I will define this function later, trust me.'" },
+      { q: "Two different variables can have the same name in C if they are in different functions.", answer: true, feedback: "TRUE! This is called scope. A variable declared inside a function is local — it only exists there. Another function can have a variable with the same name and they don't interfere with each other.", teach: "Local scope is a beautiful concept. It means functions are independent units — what happens inside, stays inside." },
+      { q: "printf() in C automatically adds a new line at the end.", answer: false, feedback: "FALSE! printf() does NOT add a newline automatically. You must add \\n yourself. printf(\"Hello\\n\"); — without \\n, the next output appears on the same line. Many beginners get confused by this!", teach: "Unlike Python's print(), C's printf() does exactly what you tell it — nothing more, nothing less." },
+      { q: "A struct in C can contain variables of different data types.", answer: true, feedback: "TRUE! This is exactly what makes struct so powerful. One struct can have a char name[], an int age, a float cgpa — all bundled together under one variable name. That's real-world data modelling.", teach: "You are a struct. I am a struct. Everything with multiple attributes is a struct waiting to happen." },
+      { q: "In C, = and == mean the same thing.", answer: false, feedback: "FALSE! = is assignment. == is comparison. if(x = 5) assigns 5 to x and is always true. if(x == 5) checks if x equals 5. This single-character difference causes some of the most frustrating bugs in C!", teach: "This bug is so common it even catches experienced programmers. Always double-check your conditions." },
+      { q: "A for loop always executes at least once.", answer: false, feedback: "FALSE! A for loop checks the condition BEFORE the first iteration. If the condition is false from the start, the loop body never executes. It's the do-while loop that always executes at least once.", teach: "for and while check condition first. do-while executes first, checks after. Know the difference — it matters!" },
+    ]
+  },
+
+  whoAmI: {
+    title: "🕵️ Who Am I?",
+    subtitle: "Clues revealed one by one — guess the C concept as fast as you can!",
+    type: "whoami",
+    questions: [
+      {
+        answer: "Variable",
+        clues: [
+          "I live in your computer's memory.",
+          "I have a name that you choose.",
+          "I hold a value — and that value can change.",
+          "You must declare me before you use me.",
+          "Without me, your program can remember nothing.",
+        ],
+        funFact: "A variable is just a named box in memory. You put something in, you can take it out, you can replace it. Every program ever written uses variables. I am the most fundamental building block of all programming."
+      },
+      {
+        answer: "Array",
+        clues: [
+          "I am not one thing — I am many of the same thing.",
+          "All my elements live next to each other in memory.",
+          "You access my elements using a number — starting from zero.",
+          "My size is fixed when you create me.",
+          "I am the simplest way to store a collection in C.",
+        ],
+        funFact: "An array is a row of boxes, all holding the same type, all in a line. int marks[5] — five integer boxes, side by side. Fast to access, simple to understand. The foundation of almost every data structure."
+      },
+      {
+        answer: "Function",
+        clues: [
+          "I am a block of code with a name.",
+          "You can call me from anywhere in your program.",
+          "I can take inputs and give back an output.",
+          "I am the key to avoiding repetition in code.",
+          "Without me, programs would be one giant unreadable block.",
+        ],
+        funFact: "A function is a reusable recipe. Write once, call many times. The best programmers write small, focused functions that do exactly one thing well. If your function needs a paragraph to explain what it does — it does too much."
+      },
+      {
+        answer: "Structure (struct)",
+        clues: [
+          "I bundle different types of data under one name.",
+          "A student has a name, roll number, and CGPA — I hold all three together.",
+          "I am how you model real-world things in C.",
+          "You access my members using a dot — like student.name",
+          "Arrays of me can represent an entire classroom of students.",
+        ],
+        funFact: "A struct is C's way of saying — real things have multiple attributes. A rectangle has length AND width. A flight has a number AND destination AND seats. I let you group them naturally. Topic 2 of this course is all about me!"
+      },
+      {
+        answer: "Loop",
+        clues: [
+          "I make your program repeat actions without copying code.",
+          "I have three forms in C — for, while, and do-while.",
+          "I need a condition — otherwise I run forever.",
+          "I am why you can process 1000 students with the same 5 lines of code.",
+          "Without me, handling arrays would be impossible.",
+        ],
+        funFact: "Imagine printing 100 student names without a loop — 100 printf() calls! A loop says: keep doing this UNTIL something changes. The power of repetition with control. Master loops and arrays together — they are inseparable in C."
+      },
+      {
+        answer: "Compiler",
+        clues: [
+          "I am not a person — but I read your code like a very strict teacher.",
+          "I translate what you write into something your computer can run.",
+          "If you make even one small mistake, I will refuse to proceed.",
+          "I have no common sense — I only follow exact rules.",
+          "In C, my name is usually GCC.",
+        ],
+        funFact: "The compiler is your first and most honest reviewer. It doesn't care about your intentions — only your precision. Every error it throws is a lesson. Learn to read compiler messages carefully — they tell you exactly what went wrong and where."
+      },
+      {
+        answer: "Scope",
+        clues: [
+          "I decide where in your program a variable can be seen.",
+          "A variable born inside a function — only lives inside that function.",
+          "I am why two functions can have a variable both called 'i' with no conflict.",
+          "Global means visible everywhere. Local means visible only here.",
+          "I protect your variables from interfering with each other.",
+        ],
+        funFact: "Scope is like privacy in real life. What happens in a function, stays in a function — unless you explicitly share it. Good programmers prefer local scope. It makes code predictable, testable, and safe. Keep your variables close and private."
+      },
+      {
+        answer: "Test-Driven Development",
+        clues: [
+          "I am an approach, not a feature of C.",
+          "I say — write the test BEFORE you write the code.",
+          "I force you to think about what your program should do before you write it.",
+          "If your program passes all tests — it works correctly.",
+          "This entire course is built around me.",
+        ],
+        funFact: "TDD flips the usual approach. Instead of writing code then checking if it works — you first define WHAT correct looks like, then write code to achieve it. It sounds strange at first. But it produces cleaner, more reliable code. And it's how professional developers work today."
+      },
+    ]
+  },
+
+  functionGame: {
+    title: "⚙️ Function or Not?",
+    subtitle: "Is this a good function? One job, clear input, predictable output?",
+    type: "buzz2",
+    questions: [
+      { q: "A chai shop that only makes chai. Same recipe. Every single time.", answer: "good", feedback: "✅ Perfect function! One job. Consistent output. Reusable. You call it, it delivers. This is what modular code looks like." },
+      { q: "Your college canteen — sometimes has food, sometimes argues with you, sometimes is just closed.", answer: "bad", feedback: "❌ Unpredictable output. Side effects everywhere. A function that behaves differently each time it's called is a nightmare to debug." },
+      { q: "A calculator that does addition — but also randomly texts your mother.", answer: "bad", feedback: "❌ Unexpected side effects! The worst kind of function. You asked for 2+2. Your mother got a message. Never write functions with hidden side effects." },
+      { q: "An auto driver who takes you from A to B. Every time. Same route. Same fare.", answer: "good", feedback: "✅ Reliable. Predictable. Reusable. Same input → same output. Write ALL your functions like this auto driver." },
+      { q: "A teacher who teaches C in Semester 1 AND Advanced C in Semester 2.", answer: "good", feedback: "✅ A function that works across different inputs! Well-defined purpose, reusable across contexts. Some functions deserve a sequel 😄" },
+      { q: "A function called calculate() that calculates tax, prints a report, sends an email AND updates a database.", answer: "bad", feedback: "❌ Function doing too many jobs! Single Responsibility Principle — one function, one job. Split this into four separate, clean functions." },
+      { q: "A vending machine — you press B3, you get the same chips, every single time.", answer: "good", feedback: "✅ Deterministic function! Same input → same output → no surprises. This is the gold standard for writing clean, testable code." },
+      { q: "A friend who gives different advice about the same problem every time you ask.", answer: "bad", feedback: "❌ Non-deterministic! Same input, different output. Impossible to trust. Impossible to test. If your function does this — you have a bug." },
+    ]
+  },
+
+  leaderboard: {
+    title: "🏆 C Points Leaderboard",
+    subtitle: "Award points live in class — all semester long",
+    type: "leaderboard"
+  }
+};
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let currentGame = null;
+let currentQ = 0;
+let score = 0;
+let answered = false;
+let leaderboard = JSON.parse(localStorage.getItem('cpoints') || '[]');
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
+function startGame(gameId) {
+  currentGame = gameId;
+  currentQ = 0;
+  score = 0;
+  answered = false;
+
+  const g = games[gameId];
+  document.getElementById('homeScreen').style.display = 'none';
+  const gs = document.getElementById('gameScreen');
+  gs.classList.add('active');
+  document.getElementById('gameTitle').textContent = g.title;
+  document.getElementById('gameSubtitle').textContent = g.subtitle;
+
+  const scoreBadge = document.getElementById('scoreBadge');
+  scoreBadge.style.display = (g.type === 'leaderboard' || g.type === 'whoami') ? 'none' : 'block';
+  scoreBadge.textContent = 'Score: 0';
+
+  renderGame();
+}
+
+function goHome() {
+  document.getElementById('homeScreen').style.display = 'flex';
+  const gs = document.getElementById('gameScreen');
+  gs.classList.remove('active');
+  document.getElementById('gameContent').innerHTML = '';
+}
+
+// ══════════════════════════════════════════════════
+// RENDER GAME
+// ══════════════════════════════════════════════════
+function renderGame() {
+  const g = games[currentGame];
+  if (g.type === 'buzz')        renderBuzz();
+  else if (g.type === 'buzz2')  renderBuzz2();
+  else if (g.type === 'mcq')    renderMCQ();
+  else if (g.type === 'trueFalse')  renderTrueFalse();
+  else if (g.type === 'whoami')     renderWhoAmI();
+  else if (g.type === 'leaderboard') renderLeaderboard();
+}
+
+// ── BUZZ (Compile/Error) ──
+function renderBuzz() {
+  const g = games[currentGame];
+  if (currentQ >= g.questions.length) { showResults(); return; }
+  const q = g.questions[currentQ];
+  answered = false;
+
+  document.getElementById('gameContent').innerHTML = `
+    <div class="q-progress">QUESTION ${currentQ+1} OF ${g.questions.length}</div>
+    <div class="q-card">
+      <div class="q-category">REAL LIFE SITUATION</div>
+      <div class="buzz-question">"${q.q}"</div>
+    </div>
+    <div class="buzz-buttons">
+      <button class="buzz-btn buzz-compile" onclick="buzzAnswer('compile')" id="compileBtn">
+        ✅ COMPILE!
+      </button>
+      <button class="buzz-btn buzz-error" onclick="buzzAnswer('error')" id="errorBtn">
+        ❌ ERROR!
+      </button>
+    </div>
+    <div id="buzzFeedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
+  `;
+}
+
+function buzzAnswer(choice) {
+  if (answered) return;
+  answered = true;
+  const g = games[currentGame];
+  const q = g.questions[currentQ];
+  const correct = choice === q.answer;
+
+  document.getElementById('compileBtn').disabled = true;
+  document.getElementById('errorBtn').disabled = true;
+
+  if (correct) {
+    score++;
+    document.getElementById('scoreBadge').textContent = `Score: ${score}`;
+    document.getElementById(choice === 'compile' ? 'compileBtn' : 'errorBtn').style.transform = 'scale(1.06)';
+  }
+
+  document.getElementById('buzzFeedback').innerHTML = `
+    <div class="feedback">
+      <strong>${correct ? '🎉 Correct!' : `The answer was: ${q.answer.toUpperCase()}`}</strong>
+      ${q.feedback}
+    </div>
+  `;
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+// ── BUZZ2 (Function/Not) ──
+function renderBuzz2() {
+  const g = games[currentGame];
+  if (currentQ >= g.questions.length) { showResults(); return; }
+  const q = g.questions[currentQ];
+  answered = false;
+
+  document.getElementById('gameContent').innerHTML = `
+    <div class="q-progress">QUESTION ${currentQ+1} OF ${g.questions.length}</div>
+    <div class="q-card">
+      <div class="q-category">IS THIS A GOOD FUNCTION?</div>
+      <div class="buzz-question">"${q.q}"</div>
+    </div>
+    <div class="buzz-buttons">
+      <button class="buzz-btn buzz-compile" onclick="buzz2Answer('good')" id="goodBtn">
+        ✅ GOOD FUNCTION
+      </button>
+      <button class="buzz-btn buzz-error" onclick="buzz2Answer('bad')" id="badBtn">
+        ❌ BAD FUNCTION
+      </button>
+    </div>
+    <div id="buzzFeedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
+  `;
+}
+
+function buzz2Answer(choice) {
+  if (answered) return;
+  answered = true;
+  const g = games[currentGame];
+  const q = g.questions[currentQ];
+  const correct = choice === q.answer;
+
+  document.getElementById('goodBtn').disabled = true;
+  document.getElementById('badBtn').disabled = true;
+  if (correct) {
+    score++;
+    document.getElementById('scoreBadge').textContent = `Score: ${score}`;
+  }
+
+  document.getElementById('buzzFeedback').innerHTML = `
+    <div class="feedback">
+      <strong>${correct ? '🎉 Correct!' : `It was a ${q.answer.toUpperCase()} function!`}</strong>
+      ${q.feedback}
+    </div>
+  `;
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+// ── MCQ ──
+function renderMCQ() {
+  const g = games[currentGame];
+  if (currentQ >= g.questions.length) { showResults(); return; }
+  const q = g.questions[currentQ];
+  answered = false;
+
+  const optionsHTML = q.options.map((opt, i) => `
+    <button class="ans-btn" onclick="mcqAnswer(${i})" id="opt${i}">
+      <span class="ans-icon">${['🅐','🅑','🅒','🅓'][i]}</span>
+      ${opt}
+    </button>
+  `).join('');
+
+  document.getElementById('gameContent').innerHTML = `
+    <div class="q-progress">QUESTION ${currentQ+1} OF ${g.questions.length}</div>
+    <div class="q-card">
+      <div class="q-category">${g.title.replace(/[^ -~]/g,'').trim()}</div>
+      <div class="q-text">${q.q}</div>
+      ${q.sub ? `<div class="q-sub">${q.sub}</div>` : ''}
+    </div>
+    <div class="answers two-col">${optionsHTML}</div>
+    <div id="mcqFeedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
+  `;
+}
+
+function mcqAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  const g = games[currentGame];
+  const q = g.questions[currentQ];
+  const correct = idx === q.correct;
+
+  for (let i = 0; i < q.options.length; i++) {
+    const btn = document.getElementById(`opt${i}`);
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('correct');
+    else if (i === idx && !correct) btn.classList.add('wrong');
+  }
+
+  if (correct) {
+    score++;
+    document.getElementById('scoreBadge').textContent = `Score: ${score}`;
+  }
+
+  document.getElementById('mcqFeedback').innerHTML = `
+    <div class="feedback">
+      <strong>${correct ? '🎉 Correct!' : `The answer is: ${q.options[q.correct]}`}</strong>
+      ${q.feedback}
+    </div>
+  `;
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+// ── TRUE OR FALSE ──
+function renderTrueFalse() {
+  const g = games[currentGame];
+  if (currentQ >= g.questions.length) { showResults(); return; }
+  const q = g.questions[currentQ];
+  answered = false;
+
+  document.getElementById('gameContent').innerHTML = `
+    <div class="q-progress">QUESTION ${currentQ+1} OF ${g.questions.length}</div>
+    <div class="q-card">
+      <div class="q-category">👆 STAND FOR TRUE &nbsp;·&nbsp; SIT FOR FALSE</div>
+      <div class="buzz-question">"${q.q}"</div>
+    </div>
+    <div class="buzz-buttons">
+      <button class="buzz-btn buzz-compile" onclick="tfAnswer(true)" id="trueBtn">
+        🧍 TRUE — Stand Up!
+      </button>
+      <button class="buzz-btn buzz-error" onclick="tfAnswer(false)" id="falseBtn">
+        🪑 FALSE — Sit Down!
+      </button>
+    </div>
+    <div id="tfFeedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
+  `;
+}
+
+function tfAnswer(choice) {
+  if (answered) return;
+  answered = true;
+  const g = games[currentGame];
+  const q = g.questions[currentQ];
+  const correct = choice === q.answer;
+
+  document.getElementById('trueBtn').disabled = true;
+  document.getElementById('falseBtn').disabled = true;
+
+  if (correct) {
+    score++;
+    document.getElementById('scoreBadge').textContent = `Score: ${score}`;
+  }
+
+  const correctLabel = q.answer ? 'TRUE ✅' : 'FALSE ✅';
+  document.getElementById('tfFeedback').innerHTML = `
+    <div class="feedback">
+      <strong>${correct ? '🎉 Correct! The answer is ' + correctLabel : '❌ The answer is ' + correctLabel}</strong>
+      ${q.feedback}
+      <div style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.1);font-size:0.88rem;color:rgba(255,255,255,0.6);">
+        💬 <em>${q.teach}</em>
+      </div>
+    </div>
+  `;
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+// ── WHO AM I ──
+let whoAmIClue = 0;
+let whoAmIGuessed = false;
+
+function renderWhoAmI() {
+  const g = games[currentGame];
+  if (currentQ >= g.questions.length) { showWhoAmIEnd(); return; }
+  whoAmIClue = 0;
+  whoAmIGuessed = false;
+  renderWhoAmISlide();
+}
+
+function renderWhoAmISlide() {
+  const g = games[currentGame];
+  const q = g.questions[currentQ];
+
+  const cluesHTML = q.clues.slice(0, whoAmIClue + 1).map((c, i) => `
+    <div style="display:flex;gap:0.8rem;align-items:flex-start;padding:0.6rem 0;
+      ${i === whoAmIClue ? 'animation:fadeIn 0.4s ease' : ''}">
+      <span style="color:var(--gold);font-family:'Space Mono',monospace;font-size:0.8rem;flex-shrink:0;margin-top:2px">
+        Clue ${i+1}
+      </span>
+      <span style="color:var(--white);font-size:1rem">${c}</span>
+    </div>
+  `).join('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.08)">');
+
+  const allCluesShown = whoAmIClue >= q.clues.length - 1;
+
+  document.getElementById('gameContent').innerHTML = `
+    <div class="q-progress">MYSTERY ${currentQ+1} OF ${g.questions.length} · Clue ${whoAmIClue+1} of ${q.clues.length}</div>
+    <div class="q-card">
+      <div class="q-category">🕵️ WHAT C CONCEPT AM I?</div>
+      <div style="margin-bottom:1rem">${cluesHTML}</div>
+      ${!whoAmIGuessed ? `
+        <div style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-top:1.2rem">
+          ${!allCluesShown ? `
+            <button class="reveal-btn" onclick="nextClue()">
+              Next Clue →
+            </button>` : ''}
+          <button class="reveal-btn" style="background:var(--amber);border-color:var(--amber)" onclick="revealAnswer()">
+            Reveal Answer 🎯
+          </button>
+        </div>
+      ` : ''}
+    </div>
+    <div id="whoAmIAnswer"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next Mystery →</button>
+  `;
+}
+
+function nextClue() {
+  const g = games[currentGame];
+  const q = g.questions[currentQ];
+  if (whoAmIClue < q.clues.length - 1) {
+    whoAmIClue++;
+    renderWhoAmISlide();
+  }
+}
+
+function revealAnswer() {
+  whoAmIGuessed = true;
+  const g = games[currentGame];
+  const q = g.questions[currentQ];
+
+  document.getElementById('whoAmIAnswer').innerHTML = `
+    <div style="text-align:center;padding:1.5rem;background:rgba(245,166,35,0.12);
+      border:2px solid var(--gold);border-radius:16px;margin-bottom:1rem;animation:slideIn 0.4s ease">
+      <div style="font-size:0.8rem;letter-spacing:2px;color:var(--amber);font-family:'Space Mono',monospace;margin-bottom:0.5rem">I AM...</div>
+      <div style="font-size:2.2rem;font-weight:900;color:var(--gold)">${q.answer}</div>
+    </div>
+    <div class="feedback">
+      <strong>💡 Fun fact:</strong> ${q.funFact}
+    </div>
+  `;
+
+  // hide next clue button, show next mystery button
+  renderWhoAmISlide();
+  document.getElementById('whoAmIAnswer').innerHTML = `
+    <div style="text-align:center;padding:1.5rem;background:rgba(245,166,35,0.12);
+      border:2px solid var(--gold);border-radius:16px;margin-bottom:1rem;animation:slideIn 0.4s ease">
+      <div style="font-size:0.8rem;letter-spacing:2px;color:var(--amber);font-family:'Space Mono',monospace;margin-bottom:0.5rem">I AM...</div>
+      <div style="font-size:2.2rem;font-weight:900;color:var(--gold)">${q.answer}</div>
+    </div>
+    <div class="feedback">
+      <strong>💡 Fun fact:</strong> ${q.funFact}
+    </div>
+  `;
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+function showWhoAmIEnd() {
+  document.getElementById('gameContent').innerHTML = `
+    <div class="results">
+      <span class="results-emoji">🕵️</span>
+      <h2>All Mysteries Solved!</h2>
+      <p class="results-msg" style="margin-top:1rem">
+        You now know 8 core C concepts by feel — not just by definition. That is how real understanding works.
+      </p>
+      <div class="results-btns" style="margin-top:2rem">
+        <button class="btn-retry" onclick="currentQ=0;renderWhoAmI()">Play Again</button>
+        <button class="btn-home" onclick="goHome()">← All Games</button>
+      </div>
+    </div>
+  `;
+}
+
+// ── LEADERBOARD ──
+function renderLeaderboard() {
+  const sorted = [...leaderboard].sort((a,b) => b.pts - a.pts);
+  const medals = ['🥇','🥈','🥉'];
+
+  const listHTML = sorted.length === 0
+    ? `<div class="lb-empty">No students yet. Add someone to get started!</div>`
+    : sorted.map((s, i) => `
+        <div class="lb-item" id="lbItem_${s.id}">
+          <span class="lb-rank">${medals[i] || `#${i+1}`}</span>
+          <span class="lb-name">${s.name}</span>
+          <span class="lb-pts">${s.pts} pts</span>
+          <div class="lb-controls">
+            <button class="lb-pt-btn plus" onclick="addPts('${s.id}', 1)" title="+1">+</button>
+            <button class="lb-pt-btn plus" onclick="addPts('${s.id}', 2)" title="+2">+2</button>
+            <button class="lb-pt-btn plus" onclick="addPts('${s.id}', 3)" title="+3">+3</button>
+            <button class="lb-pt-btn minus" onclick="addPts('${s.id}', -1)" title="-1">−</button>
+            <button class="lb-remove" onclick="removeStudent('${s.id}')" title="Remove">✕</button>
+          </div>
+        </div>
+      `).join('');
+
+  document.getElementById('gameContent').innerHTML = `
+    <div class="lb-form">
+      <input class="lb-input" id="lbName" placeholder="Student name..." onkeydown="if(event.key==='Enter')addStudent()">
+      <button class="lb-add-btn" onclick="addStudent()">+ Add Student</button>
+    </div>
+    <div style="display:flex;gap:0.8rem;margin-bottom:1rem;flex-wrap:wrap">
+      <div style="font-family:'Space Mono',monospace;font-size:0.75rem;color:rgba(255,255,255,0.4);padding:0.4rem 0.8rem;background:rgba(255,255,255,0.05);border-radius:8px">
+        💡 +1 answer · +2 helps classmate · +3 great question
+      </div>
+      <button onclick="clearBoard()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.8);padding:0.3rem 0.8rem;border-radius:8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.7rem">Clear All</button>
+    </div>
+    <div class="lb-list">${listHTML}</div>
+  `;
+}
+
+function addStudent() {
+  const input = document.getElementById('lbName');
+  const name = input.value.trim();
+  if (!name) return;
+  leaderboard.push({ id: Date.now().toString(), name, pts: 0 });
+  saveBoard();
+  input.value = '';
+  renderLeaderboard();
+}
+
+function addPts(id, delta) {
+  const s = leaderboard.find(x => x.id === id);
+  if (!s) return;
+  s.pts = Math.max(0, s.pts + delta);
+  saveBoard();
+
+  if (delta > 0) {
+    const el = document.getElementById(`lbItem_${id}`);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const flash = document.createElement('div');
+      flash.className = 'pt-flash';
+      flash.textContent = `+${delta}`;
+      flash.style.left = (rect.left + rect.width/2 - 20) + 'px';
+      flash.style.top  = (rect.top - 10) + 'px';
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 800);
+    }
+  }
+  renderLeaderboard();
+}
+
+function removeStudent(id) {
+  leaderboard = leaderboard.filter(x => x.id !== id);
+  saveBoard();
+  renderLeaderboard();
+}
+
+function clearBoard() {
+  if (confirm('Clear the leaderboard? This cannot be undone.')) {
+    leaderboard = [];
+    saveBoard();
+    renderLeaderboard();
+  }
+}
+
+function saveBoard() {
+  try { localStorage.setItem('cpoints', JSON.stringify(leaderboard)); } catch(e){}
+}
+
+// ── SHARED ──
+function nextQuestion() {
+  currentQ++;
+  renderGame();
+}
+
+function showResults() {
+  const g = games[currentGame];
+  const total = g.questions?.length || 0;
+  const pct = total ? Math.round((score/total)*100) : 0;
+
+  let emoji, msg;
+  if (pct === 100) { emoji = '🏆'; msg = "Perfect! You think exactly like a compiler."; }
+  else if (pct >= 75) { emoji = '🌟'; msg = "Excellent! Your mental model of C is strong."; }
+  else if (pct >= 50) { emoji = '💪'; msg = "Good! Keep practising — clarity will come."; }
+  else { emoji = '🤔'; msg = "That's okay. This is Day 1. Every error is a lesson."; }
+
+  document.getElementById('gameContent').innerHTML = `
+    <div class="results">
+      <span class="results-emoji">${emoji}</span>
+      <h2>Class Result</h2>
+      <div class="results-score">${score}</div>
+      <div class="results-total">out of ${total} correct · ${pct}%</div>
+      <p class="results-msg">${msg}</p>
+      <div class="results-btns">
+        <button class="btn-retry" onclick="currentQ=0;score=0;answered=false;renderGame()">Play Again</button>
+        <button class="btn-home" onclick="goHome()">← All Games</button>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
